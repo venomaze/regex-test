@@ -17,3 +17,8 @@ regex
   .test(pattern, 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa!')
   .then(res => console.log(res))
   .catch(err => console.log(err.message));
+
+regex
+  .test(pattern, 'test@mail.com')
+  .then(res => console.log(res))
+  .catch(err => console.log(err.message));
