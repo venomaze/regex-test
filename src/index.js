@@ -1,5 +1,6 @@
 const { fork } = require('child_process');
 const path = require('path');
+const JSONfn = require('json-fn');
 
 class RegexTest {
   constructor(options = {}) {
@@ -9,6 +10,8 @@ class RegexTest {
     this.queue = [];
     this.isTesting = false;
     this.worker = null;
+
+    process.on('exit', () => this.cleanWorker());
 
     this.createWorker();
   }
@@ -51,7 +54,12 @@ class RegexTest {
 
   testFromQueue() {
     if (!this.queue.length) {
+      this.cleanWorker();
       return null;
+    }
+
+    if (!this.worker) {
+      this.createWorker();
     }
 
     let isTested = false;
@@ -72,7 +80,7 @@ class RegexTest {
       }
     }, this.timeout);
 
-    this.worker.send({ regex, input });
+    this.worker.send(JSONfn.stringify({ regex, input }));
 
     this.worker.once('message', result => {
       if (!isTested) {
@@ -84,6 +92,13 @@ class RegexTest {
         this.testFromQueue();
       }
     });
+  }
+
+  cleanWorker() {
+    if (this.worker) {
+      this.destroyWorker();
+      this.worker = null;
+    }
   }
 }
 
