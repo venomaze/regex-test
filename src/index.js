@@ -1,6 +1,7 @@
 const { fork } = require('child_process');
 const path = require('path');
 const JSONfn = require('json-fn');
+const safeRegex = require('safe-regex');
 
 class RegexTest {
   /**
@@ -10,8 +11,12 @@ class RegexTest {
    * @returns {void}
    */
   constructor(options = {}) {
-    this.timeout = options.timeout || 1000;
     this.workerLocation = path.join(__dirname, 'worker.js');
+    this.timeout = options.timeout || 1000;
+    this.safeRegexOnly =
+      typeof options.validateRegex !== 'undefined'
+        ? !!options.validateRegex
+        : false;
 
     this.queue = [];
     this.isTesting = false;
@@ -73,6 +78,28 @@ class RegexTest {
   }
 
   /**
+   * @property {Function} validateRegex - Validate the given regex
+   * @param {RegExp} regex - Regular expression to be validated
+   * @access private
+   * @returns {void}
+   */
+  validateRegex(regex) {
+    if (this.safeRegexOnly) {
+      const isSafe = safeRegex(new RegExp(regex));
+
+      if (!isSafe) {
+        if (!this.isTesting) {
+          this.testFromQueue();
+        }
+
+        throw new Error(
+          'The regex is a potentially catastrophic exponential-time regular expression.'
+        );
+      }
+    }
+  }
+
+  /**
    * @property {Function} test - Test a string against a regex
    * @param {RegExp} regex - Regex to test the string against it
    * @param {String} input - String to be tested against the regex
@@ -80,10 +107,15 @@ class RegexTest {
    */
   test(regex, input) {
     return new Promise((resolve, reject) => {
-      this.addToQueue(regex, input, resolve, reject);
+      try {
+        this.validateRegex(regex);
+        this.addToQueue(regex, input, resolve, reject);
 
-      if (!this.isTesting) {
-        this.testFromQueue();
+        if (!this.isTesting) {
+          this.testFromQueue();
+        }
+      } catch (error) {
+        return reject(error);
       }
     });
   }
@@ -112,6 +144,7 @@ class RegexTest {
       if (!isTested) {
         isTested = true;
         this.isTesting = false;
+
         this.recreateWorker();
 
         const error = new Error('Test evaluation has passed the timeout.');
@@ -127,6 +160,7 @@ class RegexTest {
       if (!isTested) {
         isTested = true;
         this.isTesting = false;
+
         clearTimeout(timeout);
 
         resolve(result);

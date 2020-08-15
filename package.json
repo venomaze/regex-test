@@ -28,6 +28,7 @@
     "prettier": "^2.0.5"
   },
   "dependencies": {
-    "json-fn": "^1.1.1"
+    "json-fn": "^1.1.1",
+    "safe-regex": "^2.1.1"
   }
 }
