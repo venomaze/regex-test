@@ -56,4 +56,4 @@ regex
 The options are:
 
 - **timeout**: The timeout for regular expression tests in milliseconds. (Default to 1000)
-- **safeRegexOnly**: If true, throw an error if the regex is potentially catastrophic exponential-time. (Default to false)
+- **safeRegexOnly**: If true, throw an error if the regex is a potentially catastrophic exponential-time regular expression. (Default to false)
